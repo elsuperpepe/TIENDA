@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Mi Negocio - Xbox & Papelería</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="container py-4">
+        <h1 class="mb-4">🎮 Xbox & 📎 Papelería</h1>
+
+        <!-- Lista de productos -->
+        <h2>Productos disponibles</h2>
+        <div id="lista-productos" class="row mb-4"></div>
+
+        <!-- Carrito -->
+        <h2>Carrito</h2>
+        <ul id="carrito-lista" class="list-group mb-3"></ul>
+        <button class="btn btn-success btn-lg" onclick="realizarVenta()">
+            Finalizar Venta
+        </button>
+
+        <!-- Ventas realizadas -->
+        <h2 class="mt-5">Historial de Ventas</h2>
+        <div id="lista-ventas"></div>
+
+        <script>
+            // Token CSRF
+            function getCSRFToken() {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== "") {
+                    const cookies = document.cookie.split(";");
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, 10) === "csrftoken=") {
+                            cookieValue = decodeURIComponent(
+                                cookie.substring(10),
+                            );
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            // Cargar productos
+            fetch("/api/inventario/productos/")
+                .then((res) => res.json())
+                .then((data) => {
+                    const div = document.getElementById("lista-productos");
+                    data.forEach((p) => {
+                        div.innerHTML += `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${p.nombre}</h5>
+                                    <p class="card-text">Precio: $${p.precio}</p>
+                                    <div class="input-group mb-2">
+                                        <input type="number" id="cant-${p.id}" class="form-control" value="1" min="1">
+                                        <button class="btn btn-primary" onclick="agregar(${p.id})">Agregar</button>
+                                    </div>
+                                    ${p.es_servicio ? '<span class="badge bg-info">Servicio (sin stock)</span>' : `<span class="badge bg-secondary">Stock: ${p.stock}</span>`}
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                });
+
+            let carrito = [];
+
+            function agregar(productoId) {
+                const cantidad = parseInt(
+                    document.getElementById(`cant-${productoId}`).value,
+                );
+                if (cantidad < 1) return;
+                carrito.push({ producto_id: productoId, cantidad: cantidad });
+                actualizarCarritoUI();
+            }
+
+            function actualizarCarritoUI() {
+                const lista = document.getElementById("carrito-lista");
+                lista.innerHTML = "";
+                carrito.forEach((item, index) => {
+                    // Podemos buscar el nombre desde la lista cargada, pero simplificamos mostrando ID y cantidad
+                    lista.innerHTML += `<li class="list-group-item d-flex justify-content-between">
+                    Producto #${item.producto_id} x ${item.cantidad}
+                    <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">Quitar</button>
+                </li>`;
+                });
+            }
+
+            function eliminarDelCarrito(index) {
+                carrito.splice(index, 1);
+                actualizarCarritoUI();
+            }
+
+            function realizarVenta() {
+                if (carrito.length === 0) {
+                    alert("Agrega productos al carrito primero");
+                    return;
+                }
+                fetch("/api/registrar/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                    body: JSON.stringify({ tienda_id: 1, items: carrito }),
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.error) {
+                            alert("Error: " + data.error);
+                        } else {
+                            alert(
+                                `¡Venta #${data.venta_id} exitosa! Total: $${data.total}`,
+                            );
+                            carrito = [];
+                            actualizarCarritoUI();
+                            cargarVentas();
+                            // Recargar productos para ver stock actualizado
+                            location.reload();
+                        }
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        alert("Error de conexión");
+                    });
+            }
+
+            function cargarVentas() {
+                fetch("/api/listar/")
+                    .then((res) => res.json())
+                    .then((data) => {
+                        const div = document.getElementById("lista-ventas");
+                        div.innerHTML = `
+                        ${data.ventas.map((v) => `<p>Venta #${v.id}: $${v.total}</p>`).join("")}
+                        <hr>
+                        <h3>Total acumulado: $${data.total_general}</h3>
+                    `;
+                    });
+            }
+
+            cargarVentas();
+        </script>
+    </body>
+</html>
