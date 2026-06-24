@@ -104,12 +104,13 @@ class VozParser:
     def parse(texto: str) -> list:
         texto = texto.lower().strip()
         items = []
-        # Buscamos cada producto en el texto
         for producto in Producto.objects.all():
-            nombre_lower = producto.nombre.lower()
-            if nombre_lower in texto:
-                # Buscar cantidad: número antes o palabra numérica
-                cantidad = VozParser._extraer_cantidad(texto, nombre_lower)
+            # Dividimos el nombre en palabras clave (ej: ["alquiler", "xbox", "(hora)"])
+            palabras_clave = producto.nombre.lower().split()
+            # Buscamos cuántas de esas palabras aparecen en el texto
+            coincidencias = sum(1 for palabra in palabras_clave if palabra in texto)
+            if coincidencias >= 1:  # Al menos una palabra coincide
+                cantidad = VozParser._extraer_cantidad(texto, producto.nombre.lower())
                 if cantidad > 0:
                     items.append({"producto_id": producto.id, "cantidad": cantidad})
         if not items:
@@ -118,13 +119,14 @@ class VozParser:
 
     @staticmethod
     def _extraer_cantidad(texto: str, nombre_producto: str) -> int:
-        # Buscar un número justo antes del producto
-        patron = rf"(\w+)\s+{re.escape(nombre_producto)}"
-        match = re.search(patron, texto)
-        if match:
-            palabra = match.group(1)
-            if palabra.isdigit():
-                return int(palabra)
-            return VozParser.PALABRAS_NUMEROS.get(palabra, 1)
-        # Si no hay número explícito, asumimos 1
+        # Buscar un número (dígito o palabra) en todo el texto
+        # Primero buscamos dígitos
+        digitos = re.search(r"\b(\d+)\b", texto)
+        if digitos:
+            return int(digitos.group(1))
+        # Luego buscamos palabras numéricas
+        for palabra in VozParser.PALABRAS_NUMEROS:
+            if palabra in texto:
+                return VozParser.PALABRAS_NUMEROS[palabra]
+        # Si no hay cantidad explícita, asumimos 1
         return 1

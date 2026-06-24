@@ -8,9 +8,42 @@
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
             rel="stylesheet"
         />
+        <style>
+            #mic-btn.escuchando {
+                background-color: #dc3545;
+                animation: pulse 1s infinite;
+            }
+            @keyframes pulse {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+                }
+                70% {
+                    box-shadow: 0 0 0 15px rgba(220, 53, 69, 0);
+                }
+                100% {
+                    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+                }
+            }
+        </style>
     </head>
     <body class="container py-4">
         <h1 class="mb-4">🎮 Xbox & 📎 Papelería</h1>
+
+        <!-- Zona de voz -->
+        <div class="card mb-4 p-3 bg-light">
+            <h3>🎤 Comando de voz</h3>
+            <button
+                id="mic-btn"
+                class="btn btn-primary btn-lg"
+                onclick="toggleMicrofono()"
+            >
+                🎙️ Hablar
+            </button>
+            <span id="estado-voz" class="ms-2"
+                >Pulsa y habla (ej: "dos horas de xbox")</span
+            >
+            <div id="transcripcion" class="mt-2 fst-italic"></div>
+        </div>
 
         <!-- Lista de productos -->
         <h2>Productos disponibles</h2>
@@ -28,7 +61,107 @@
         <div id="lista-ventas"></div>
 
         <script>
-            // Token CSRF
+            // ========== MICROFONO ==========
+            let recognition;
+            let escuchando = false;
+
+            function initRecognition() {
+                const SpeechRecognition =
+                    window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert(
+                        "Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.",
+                    );
+                    return null;
+                }
+                const rec = new SpeechRecognition();
+                rec.lang = "es-CO"; // español colombiano
+                rec.continuous = false; // una sola frase
+                rec.interimResults = false;
+                return rec;
+            }
+
+            function toggleMicrofono() {
+                if (!recognition) {
+                    recognition = initRecognition();
+                    if (!recognition) return;
+                    recognition.onresult = (event) => {
+                        const texto = event.results[0][0].transcript.trim();
+                        document.getElementById("transcripcion").textContent =
+                            '"' + texto + '"';
+                        document.getElementById("estado-voz").textContent =
+                            "Procesando...";
+                        enviarVoz(texto);
+                    };
+                    recognition.onerror = (event) => {
+                        document.getElementById("estado-voz").textContent =
+                            "Error: " + event.error;
+                        detenerEscucha();
+                    };
+                    recognition.onend = () => {
+                        detenerEscucha();
+                    };
+                }
+
+                if (escuchando) {
+                    recognition.stop();
+                    detenerEscucha();
+                } else {
+                    recognition.start();
+                    document
+                        .getElementById("mic-btn")
+                        .classList.add("escuchando");
+                    document.getElementById("mic-btn").textContent =
+                        "🔴 Escuchando...";
+                    document.getElementById("estado-voz").textContent =
+                        "Habla ahora...";
+                    escuchando = true;
+                }
+            }
+
+            function detenerEscucha() {
+                document
+                    .getElementById("mic-btn")
+                    .classList.remove("escuchando");
+                document.getElementById("mic-btn").textContent = "🎙️ Hablar";
+                document.getElementById("estado-voz").textContent =
+                    "Pulsa y habla (ej: 'dos horas de xbox')";
+                escuchando = false;
+            }
+
+            function enviarVoz(texto) {
+                fetch("/api/voz/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                    body: JSON.stringify({ texto: texto, tienda_id: 1 }),
+                })
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.error) {
+                            alert("Error: " + data.error);
+                            document.getElementById("estado-voz").textContent =
+                                "Error: " + data.error;
+                        } else {
+                            alert(
+                                `¡Venta #${data.venta_id} por voz! Total: $${data.total}`,
+                            );
+                            document.getElementById("estado-voz").textContent =
+                                "Venta registrada. Pulsa para otra.";
+                            cargarVentas();
+                            location.reload(); // refresca productos para ver stock
+                        }
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        document.getElementById("estado-voz").textContent =
+                            "Error de conexión";
+                    });
+            }
+
+            // ========== TOKEN CSRF ==========
             function getCSRFToken() {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== "") {
@@ -46,7 +179,7 @@
                 return cookieValue;
             }
 
-            // Cargar productos
+            // ========== CARGAR PRODUCTOS ==========
             fetch("/api/inventario/productos/")
                 .then((res) => res.json())
                 .then((data) => {
@@ -69,6 +202,7 @@
                     });
                 });
 
+            // ========== CARRITO ==========
             let carrito = [];
 
             function agregar(productoId) {
@@ -84,7 +218,6 @@
                 const lista = document.getElementById("carrito-lista");
                 lista.innerHTML = "";
                 carrito.forEach((item, index) => {
-                    // Podemos buscar el nombre desde la lista cargada, pero simplificamos mostrando ID y cantidad
                     lista.innerHTML += `<li class="list-group-item d-flex justify-content-between">
                     Producto #${item.producto_id} x ${item.cantidad}
                     <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">Quitar</button>
@@ -121,7 +254,6 @@
                             carrito = [];
                             actualizarCarritoUI();
                             cargarVentas();
-                            // Recargar productos para ver stock actualizado
                             location.reload();
                         }
                     })
