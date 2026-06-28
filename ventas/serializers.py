@@ -1,15 +1,3 @@
-"""
-from rest_framework import serializers
-
-from .models import Tienda
-
-
-class TiendaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tienda
-        fields = "__all__"  # Esto traduce todos los campos de la tienda a JSON
-"""
-
 # ventas/serializers.py
 from rest_framework import serializers
 
@@ -19,6 +7,9 @@ from inventario.models import Producto, Tienda
 class ItemVentaEntradaSerializer(serializers.Serializer):
     producto_id = serializers.PrimaryKeyRelatedField(queryset=Producto.objects.all())
     cantidad = serializers.IntegerField(min_value=1)
+    nota = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
 
 
 class VentaEntradaSerializer(serializers.Serializer):

@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>🍕 Pizzería Don Franco</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --bg: #0a0a0a;
+                --surface: #1c1c1c;
+                --surface2: #272727;
+                --border: #333;
+                --red: #e8250a;
+                --red-dim: rgba(232, 37, 10, 0.15);
+                --red-hover: #c91e08;
+                --red-glow: rgba(232, 37, 10, 0.4);
+                --cream: #f5ecd7;
+                --cream-dim: #a89880;
+                --success: #22c55e;
+                --danger: #ef4444;
+                --text: #f5ecd7;
+                --text-dim: #6b6055;
+            }
+
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family: "Inter", sans-serif;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            /* ── HEADER ── */
+            header {
+                height: 56px;
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 0 1.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-shrink: 0;
+                z-index: 50;
+            }
+            .logo {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.5rem;
+                letter-spacing: 3px;
+                color: var(--red);
+            }
+            .logo em {
+                color: var(--cream);
+                font-style: normal;
+            }
+            .header-right {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            #reloj {
+                font-size: 0.78rem;
+                color: var(--text-dim);
+                font-variant-numeric: tabular-nums;
+            }
+            #btn-cerrar-dia {
+                font-family: "Inter", sans-serif;
+                font-size: 0.75rem;
+                background: transparent;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text-dim);
+                padding: 0.3rem 0.75rem;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            #btn-cerrar-dia:hover {
+                border-color: var(--red);
+                color: var(--cream);
+            }
+
+            /* ── LAYOUT ── */
+            .layout {
+                display: grid;
+                grid-template-columns: 1fr 360px;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            /* ── PANEL IZQ ── */
+            .left {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                border-right: 1px solid var(--border);
+            }
+
+            /* ── VOZ ── */
+            .voz-bar {
+                flex-shrink: 0;
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 0.75rem 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            .mic-wrap {
+                position: relative;
+                flex-shrink: 0;
+            }
+            #mic-btn {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                border: none;
+                background: var(--red);
+                color: white;
+                font-size: 1.2rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                z-index: 2;
+                transition:
+                    transform 0.1s,
+                    background 0.2s;
+            }
+            #mic-btn:hover {
+                background: var(--red-hover);
+                transform: scale(1.06);
+            }
+            #mic-btn:active {
+                transform: scale(0.95);
+            }
+            .ring {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                border: 2px solid var(--red);
+                transform: translate(-50%, -50%);
+                opacity: 0;
+                z-index: 1;
+            }
+            #mic-btn.on ~ .ring:nth-child(2) {
+                animation: ring 1.6s ease-out infinite 0s;
+            }
+            #mic-btn.on ~ .ring:nth-child(3) {
+                animation: ring 1.6s ease-out infinite 0.55s;
+            }
+            #mic-btn.on ~ .ring:nth-child(4) {
+                animation: ring 1.6s ease-out infinite 1.1s;
+            }
+            @keyframes ring {
+                0% {
+                    opacity: 0.7;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(3);
+                }
+            }
+            .voz-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .voz-label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: var(--text-dim);
+                margin-bottom: 0.2rem;
+            }
+            #voz-status {
+                font-size: 0.85rem;
+                color: var(--cream-dim);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            #voz-transcripcion {
+                font-size: 0.8rem;
+                color: var(--cream);
+                font-style: italic;
+                min-height: 1rem;
+                margin-top: 0.15rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            /* barras de audio */
+            .bars {
+                display: flex;
+                align-items: flex-end;
+                gap: 2px;
+                height: 24px;
+                flex-shrink: 0;
+            }
+            .bars span {
+                width: 3px;
+                background: var(--red);
+                border-radius: 2px;
+                height: 3px;
+            }
+            .bars.on span:nth-child(1) {
+                animation: b 0.7s ease-in-out infinite 0s;
+            }
+            .bars.on span:nth-child(2) {
+                animation: b 0.7s ease-in-out infinite 0.1s;
+            }
+            .bars.on span:nth-child(3) {
+                animation: b 0.7s ease-in-out infinite 0.2s;
+            }
+            .bars.on span:nth-child(4) {
+                animation: b 0.7s ease-in-out infinite 0.08s;
+            }
+            .bars.on span:nth-child(5) {
+                animation: b 0.7s ease-in-out infinite 0.15s;
+            }
+            @keyframes b {
+                0%,
+                100% {
+                    height: 3px;
+                }
+                50% {
+                    height: 20px;
+                }
+            }
+
+            /* ── TABS ── */
+            .tabs-bar {
+                flex-shrink: 0;
+                padding: 0.75rem 1.5rem 0.5rem;
+                display: flex;
+                gap: 0.4rem;
+                flex-wrap: wrap;
+                border-bottom: 1px solid var(--border);
+            }
+            .tab {
+                font-family: "Inter", sans-serif;
+                font-size: 0.75rem;
+                padding: 0.25rem 0.8rem;
+                border-radius: 20px;
+                border: 1px solid var(--border);
+                background: transparent;
+                color: var(--text-dim);
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .tab.active,
+            .tab:hover {
+                background: var(--red);
+                border-color: var(--red);
+                color: #fff;
+            }
+
+            /* ── GRID PRODUCTOS ── */
+            .productos-scroll {
+                flex: 1;
+                overflow-y: auto;
+                padding: 1rem 1.5rem;
+            }
+            .productos-scroll::-webkit-scrollbar {
+                width: 3px;
+            }
+            .productos-scroll::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 2px;
+            }
+
+            #grid-productos {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 0.6rem;
+            }
+            .p-card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 0.85rem 0.9rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+                cursor: pointer;
+                transition:
+                    border-color 0.15s,
+                    transform 0.1s,
+                    background 0.1s;
+                user-select: none;
+            }
+            .p-card:hover {
+                border-color: var(--red);
+                transform: translateY(-1px);
+            }
+            .p-card:active {
+                transform: scale(0.98);
+            }
+            .p-nombre {
+                font-size: 0.8rem;
+                font-weight: 600;
+                line-height: 1.3;
+                color: var(--cream);
+            }
+            .p-precio {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.35rem;
+                color: var(--red);
+                letter-spacing: 1px;
+            }
+            .p-controls {
+                display: flex;
+                gap: 0.35rem;
+                align-items: center;
+                margin-top: auto;
+                padding-top: 0.3rem;
+            }
+            .p-qty {
+                width: 44px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                color: var(--cream);
+                font-family: "Inter", sans-serif;
+                font-size: 0.8rem;
+                padding: 0.3rem 0.3rem;
+                text-align: center;
+                outline: none;
+            }
+            .p-qty:focus {
+                border-color: var(--red);
+            }
+            .p-add {
+                flex: 1;
+                background: var(--red);
+                border: none;
+                border-radius: 5px;
+                color: #fff;
+                font-family: "Inter", sans-serif;
+                font-size: 0.72rem;
+                font-weight: 600;
+                padding: 0.3rem 0.5rem;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            .p-add:hover {
+                background: var(--red-hover);
+            }
+
+            /* ── MITAD Y MITAD ── */
+            .combo-section {
+                flex-shrink: 0;
+                border-top: 1px solid var(--border);
+                padding: 0.75rem 1.5rem;
+                background: var(--surface);
+            }
+            .combo-label {
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: var(--red);
+                margin-bottom: 0.5rem;
+            }
+            .combo-row {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .combo-sel {
+                flex: 1;
+                min-width: 110px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--cream);
+                font-family: "Inter", sans-serif;
+                font-size: 0.78rem;
+                padding: 0.35rem 0.5rem;
+                outline: none;
+                cursor: pointer;
+            }
+            .combo-sel:focus {
+                border-color: var(--red);
+            }
+            #btn-agregar-combo {
+                background: var(--red);
+                border: none;
+                border-radius: 6px;
+                color: #fff;
+                font-family: "Inter", sans-serif;
+                font-size: 0.78rem;
+                font-weight: 600;
+                padding: 0.35rem 1rem;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: background 0.15s;
+            }
+            #btn-agregar-combo:hover {
+                background: var(--red-hover);
+            }
+
+            /* ── HISTORIAL (abajo izq) ── */
+            .historial-section {
+                flex-shrink: 0;
+                border-top: 1px solid var(--border);
+                padding: 0.75rem 1.5rem;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            .historial-section::-webkit-scrollbar {
+                width: 3px;
+            }
+            .historial-section::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 2px;
+            }
+            .hist-label {
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: var(--text-dim);
+                margin-bottom: 0.5rem;
+            }
+            #ventas-lista {
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+            .v-row {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.45rem 0.7rem;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 7px;
+                font-size: 0.8rem;
+            }
+            .v-id {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 0.9rem;
+                color: var(--text-dim);
+                min-width: 68px;
+            }
+            .v-total {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.1rem;
+                color: var(--cream);
+                flex: 1;
+            }
+            .v-anular {
+                background: transparent;
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                color: var(--text-dim);
+                font-family: "Inter", sans-serif;
+                font-size: 0.7rem;
+                padding: 0.2rem 0.55rem;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .v-anular:hover {
+                border-color: var(--danger);
+                color: var(--danger);
+            }
+            .v-total-dia {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 0.5rem 0.7rem;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 7px;
+                margin-top: 0.2rem;
+            }
+            .v-total-dia-label {
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                color: var(--text-dim);
+            }
+            .v-total-dia-amount {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.5rem;
+                color: var(--success);
+            }
+
+            /* ── PANEL DERECHO (carrito) ── */
+            .right {
+                display: flex;
+                flex-direction: column;
+                background: var(--surface);
+                overflow: hidden;
+            }
+            .cart-head {
+                padding: 1rem 1.25rem;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-shrink: 0;
+            }
+            .cart-head h2 {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.1rem;
+                letter-spacing: 2px;
+                color: var(--cream);
+            }
+            .cart-badge {
+                background: var(--red);
+                color: #fff;
+                border-radius: 10px;
+                font-size: 0.68rem;
+                font-weight: 700;
+                padding: 0.12rem 0.55rem;
+                min-width: 22px;
+                text-align: center;
+            }
+            #cart-items {
+                flex: 1;
+                overflow-y: auto;
+                padding: 0.75rem 1.25rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            #cart-items::-webkit-scrollbar {
+                width: 3px;
+            }
+            #cart-items::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 2px;
+            }
+            .cart-empty {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                color: var(--text-dim);
+                font-size: 0.82rem;
+            }
+            .cart-empty-ico {
+                font-size: 2rem;
+                opacity: 0.2;
+            }
+
+            .c-item {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 7px;
+                padding: 0.6rem 0.8rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.6rem;
+            }
+            .c-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .c-name {
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--cream);
+                line-height: 1.3;
+            }
+            .c-nota {
+                font-size: 0.7rem;
+                color: var(--red);
+                margin-top: 0.1rem;
+            }
+            .c-qty {
+                font-size: 0.7rem;
+                color: var(--text-dim);
+                margin-top: 0.1rem;
+            }
+            .c-price {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.05rem;
+                color: var(--red);
+                flex-shrink: 0;
+            }
+            .c-del {
+                background: transparent;
+                border: none;
+                color: var(--text-dim);
+                font-size: 0.95rem;
+                cursor: pointer;
+                padding: 0 0.2rem;
+                line-height: 1;
+                transition: color 0.15s;
+                flex-shrink: 0;
+            }
+            .c-del:hover {
+                color: var(--danger);
+            }
+
+            .cart-total-row {
+                padding: 0.7rem 1.25rem;
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                flex-shrink: 0;
+            }
+            .cart-total-label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                color: var(--text-dim);
+            }
+            #cart-total-amount {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 1.9rem;
+                color: var(--cream);
+            }
+
+            .cart-foot {
+                padding: 0.75rem 1.25rem 1.25rem;
+                flex-shrink: 0;
+            }
+            #btn-vender {
+                width: 100%;
+                background: var(--red);
+                border: none;
+                border-radius: 9px;
+                color: #fff;
+                font-family: "Inter", sans-serif;
+                font-size: 0.95rem;
+                font-weight: 700;
+                padding: 0.85rem;
+                cursor: pointer;
+                transition:
+                    background 0.15s,
+                    box-shadow 0.15s;
+                letter-spacing: 0.3px;
+            }
+            #btn-vender:hover {
+                background: var(--red-hover);
+                box-shadow: 0 4px 20px var(--red-glow);
+            }
+            #btn-vender:active {
+                transform: scale(0.99);
+            }
+            #btn-vender:disabled {
+                background: var(--surface2);
+                color: var(--text-dim);
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+            /* ── TOAST ── */
+            #toasts {
+                position: fixed;
+                bottom: 1.25rem;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column-reverse;
+                gap: 0.4rem;
+                z-index: 9999;
+                pointer-events: none;
+            }
+            .toast {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 9px;
+                padding: 0.65rem 1.1rem;
+                font-size: 0.82rem;
+                color: var(--cream);
+                box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+                animation: tin 0.22s ease;
+                pointer-events: all;
+                max-width: 380px;
+            }
+            .toast.ok {
+                border-left: 3px solid var(--success);
+            }
+            .toast.err {
+                border-left: 3px solid var(--danger);
+            }
+            .toast.inf {
+                border-left: 3px solid var(--red);
+            }
+            @keyframes tin {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px) scale(0.97);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+
+            /* ── SKELETON ── */
+            .skel {
+                background: linear-gradient(
+                    90deg,
+                    var(--surface) 25%,
+                    var(--surface2) 50%,
+                    var(--surface) 75%
+                );
+                background-size: 200% 100%;
+                animation: shim 1.1s infinite;
+                border-radius: 8px;
+            }
+            @keyframes shim {
+                0% {
+                    background-position: 200% 0;
+                }
+                100% {
+                    background-position: -200% 0;
+                }
+            }
+
+            /* ── RESPONSIVE ── */
+            @media (max-width: 700px) {
+                body {
+                    overflow: auto;
+                    height: auto;
+                }
+                .layout {
+                    grid-template-columns: 1fr;
+                }
+                .left {
+                    max-height: none;
+                }
+                .right {
+                    order: -1;
+                    max-height: 55vh;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">🍕 Don <em>Franco</em></div>
+            <div class="header-right">
+                <button id="btn-cerrar-dia">📅 Cerrar día</button>
+                <div id="reloj">—</div>
+            </div>
+        </header>
+
+        <div class="layout">
+            <!-- ══ PANEL IZQUIERDO ══ -->
+            <div class="left">
+                <!-- VOZ -->
+                <div class="voz-bar">
+                    <div class="mic-wrap">
+                        <button
+                            id="mic-btn"
+                            title="Hablar para registrar pedido"
+                        >
+                            🎙️
+                        </button>
+                        <div class="ring"></div>
+                        <div class="ring"></div>
+                        <div class="ring"></div>
+                    </div>
+                    <div class="voz-info">
+                        <div class="voz-label">Pedido por voz</div>
+                        <div id="voz-status">Toca el micrófono y habla</div>
+                        <div id="voz-transcripcion"></div>
+                    </div>
+                    <div class="bars" id="voz-bars">
+                        <span></span><span></span><span></span><span></span
+                        ><span></span>
+                    </div>
+                </div>
+
+                <!-- TABS -->
+                <div class="tabs-bar" id="tabs">
+                    <button class="tab active" data-cat="all">Todos</button>
+                    <button class="tab" data-cat="pizza">Pizzas</button>
+                    <button class="tab" data-cat="adicional">
+                        Adicionales
+                    </button>
+                </div>
+
+                <!-- PRODUCTOS -->
+                <div class="productos-scroll">
+                    <div id="grid-productos">
+                        <div class="skel" style="height: 100px"></div>
+                        <div class="skel" style="height: 100px"></div>
+                        <div class="skel" style="height: 100px"></div>
+                        <div class="skel" style="height: 100px"></div>
+                        <div class="skel" style="height: 100px"></div>
+                        <div class="skel" style="height: 100px"></div>
+                    </div>
+                </div>
+
+                <!-- COMBO MITAD Y MITAD -->
+                <div
+                    class="combo-section"
+                    id="combo-section"
+                    style="display: none"
+                >
+                    <div class="combo-label">🍕 Mitad y Mitad</div>
+                    <div class="combo-row">
+                        <select id="combo-f1" class="combo-sel">
+                            <option value="">Primera mitad...</option>
+                        </select>
+                        <select id="combo-f2" class="combo-sel">
+                            <option value="">Segunda mitad...</option>
+                        </select>
+                        <button id="btn-agregar-combo">Agregar</button>
+                    </div>
+                </div>
+
+                <!-- HISTORIAL -->
+                <div class="historial-section">
+                    <div class="hist-label">Ventas del día</div>
+                    <div id="ventas-lista">
+                        <div class="skel" style="height: 40px"></div>
+                        <div
+                            class="skel"
+                            style="height: 40px; margin-top: 0.35rem"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ PANEL DERECHO (carrito) ══ -->
+            <div class="right">
+                <div class="cart-head">
+                    <h2>Pedido actual</h2>
+                    <span class="cart-badge" id="cart-badge">0</span>
+                </div>
+
+                <div id="cart-items">
+                    <div class="cart-empty" id="cart-empty">
+                        <div class="cart-empty-ico">🛒</div>
+                        <div>El pedido está vacío</div>
+                        <div
+                            style="
+                                font-size: 0.72rem;
+                                color: var(--text-dim);
+                                margin-top: 0.2rem;
+                            "
+                        >
+                            Toca un producto para agregar
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cart-total-row">
+                    <span class="cart-total-label">Total</span>
+                    <span id="cart-total-amount">$0</span>
+                </div>
+
+                <div class="cart-foot">
+                    <button id="btn-vender" disabled>✅ Registrar venta</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="toasts"></div>
+
+        <script>
+            // ══ CSRF ══
+            function csrf() {
+                for (const c of document.cookie.split("; "))
+                    if (c.startsWith("csrftoken="))
+                        return decodeURIComponent(c.split("=")[1]);
+                return null;
+            }
+
+            // ══ RELOJ ══
+            setInterval(() => {
+                document.getElementById("reloj").textContent =
+                    new Date().toLocaleTimeString("es-CO", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    });
+            }, 1000);
+
+            // ══ TOAST ══
+            function toast(msg, type = "inf", ms = 3200) {
+                const ico = { ok: "✅", err: "❌", inf: "🍕" };
+                const el = document.createElement("div");
+                el.className = `toast ${type}`;
+                el.innerHTML = `<span>${ico[type] || "•"}</span><span>${msg}</span>`;
+                document.getElementById("toasts").appendChild(el);
+                setTimeout(() => {
+                    el.style.transition = "opacity .3s, transform .3s";
+                    el.style.opacity = "0";
+                    el.style.transform = "translateY(8px)";
+                    setTimeout(() => el.remove(), 300);
+                }, ms);
+            }
+
+            // ══ MICRÓFONO ══
+            let recog = null,
+                micOn = false;
+
+            document
+                .getElementById("mic-btn")
+                .addEventListener("click", toggleMic);
+
+            function toggleMic() {
+                if (!recog) {
+                    const SR =
+                        window.SpeechRecognition ||
+                        window.webkitSpeechRecognition;
+                    if (!SR) {
+                        toast(
+                            "Necesitas Chrome o Edge para el micrófono",
+                            "err",
+                        );
+                        return;
+                    }
+                    recog = new SR();
+                    recog.lang = "es-CO";
+                    recog.continuous = false;
+                    recog.interimResults = true; // ← interim para feedback inmediato
+
+                    recog.onstart = () => setMic(true);
+
+                    recog.onresult = (e) => {
+                        // Mostrar transcripción parcial mientras habla
+                        const parcial = Array.from(e.results)
+                            .map((r) => r[0].transcript)
+                            .join("");
+                        document.getElementById(
+                            "voz-transcripcion",
+                        ).textContent = `"${parcial}"`;
+
+                        // Solo procesar el resultado final
+                        if (e.results[e.results.length - 1].isFinal) {
+                            const texto = parcial.trim();
+                            document.getElementById("voz-status").textContent =
+                                "Procesando pedido...";
+                            procesarVoz(texto);
+                        }
+                    };
+
+                    recog.onerror = (e) => {
+                        const msgs = {
+                            "no-speech": "No se detectó voz — intenta de nuevo",
+                            "audio-capture": "No se encontró micrófono",
+                            "not-allowed": "Permiso de micrófono denegado",
+                            network: "Error de red",
+                        };
+                        document.getElementById("voz-status").textContent =
+                            msgs[e.error] || "Error: " + e.error;
+                        setMic(false);
+                    };
+
+                    recog.onend = () => setMic(false);
+                }
+
+                if (micOn) {
+                    recog.stop();
+                    return;
+                }
+                recog.start();
+            }
+
+            function setMic(on) {
+                micOn = on;
+                const btn = document.getElementById("mic-btn");
+                const bars = document.getElementById("voz-bars");
+                const st = document.getElementById("voz-status");
+                btn.textContent = on ? "🔴" : "🎙️";
+                btn.classList.toggle("on", on);
+                bars.classList.toggle("on", on);
+                if (on) {
+                    st.textContent = "Escuchando — habla ahora...";
+                    document.getElementById("voz-transcripcion").textContent =
+                        "";
+                } else {
+                    // Solo resetear status si no estamos procesando
+                    if (st.textContent === "Escuchando — habla ahora...")
+                        st.textContent = "Toca el micrófono y habla";
+                }
+            }
+
+            function procesarVoz(texto) {
+                fetch("/api/voz/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf(),
+                    },
+                    body: JSON.stringify({ texto, tienda_id: 1 }),
+                })
+                    .then((r) => r.json())
+                    .then((d) => {
+                        if (d.error) {
+                            toast("No entendí el pedido: " + d.error, "err");
+                            document.getElementById("voz-status").textContent =
+                                "No se entendió — intenta de nuevo";
+                        } else {
+                            toast(
+                                `Venta #${d.venta_id} registrada por voz — $${d.total.toLocaleString("es-CO")}`,
+                                "ok",
+                            );
+                            document.getElementById("voz-status").textContent =
+                                `✓ Venta #${d.venta_id} registrada`;
+                            document.getElementById(
+                                "voz-transcripcion",
+                            ).textContent = "";
+                            cargarVentas();
+                            setTimeout(() => {
+                                document.getElementById(
+                                    "voz-status",
+                                ).textContent = "Toca el micrófono y habla";
+                            }, 3000);
+                        }
+                    })
+                    .catch(() => {
+                        toast("Error de conexión", "err");
+                        document.getElementById("voz-status").textContent =
+                            "Error de conexión";
+                    });
+            }
+
+            // ══ PRODUCTOS ══
+            let todos = []; // todos los productos cargados
+            let catActiva = "all";
+            let pizzasBase = []; // para el combo mitad y mitad
+
+            function renderProductos(lista) {
+                const g = document.getElementById("grid-productos");
+                g.innerHTML = "";
+                if (!lista.length) {
+                    g.innerHTML =
+                        '<p style="color:var(--text-dim);font-size:.82rem;grid-column:1/-1">Sin productos en esta categoría.</p>';
+                    return;
+                }
+                lista.forEach((p) => {
+                    const nombre = p.nombre.replace(/'/g, "\\'");
+                    const card = document.createElement("div");
+                    card.className = "p-card";
+                    card.innerHTML = `
+            <div class="p-nombre">${p.nombre}</div>
+            <div class="p-precio">$${p.precio.toLocaleString("es-CO")}</div>
+            <div class="p-controls">
+                <input type="number" class="p-qty" id="qty-${p.id}" value="1" min="1" max="99">
+                <button class="p-add" onclick="agregar(${p.id},'${nombre}',${p.precio})">+ Agregar</button>
+            </div>
+        `;
+                    g.appendChild(card);
+                });
+            }
+
+            function filtrar(cat) {
+                if (cat === "all") return todos;
+                return todos.filter((p) =>
+                    p.nombre.toLowerCase().includes(cat),
+                );
+            }
+
+            // Tabs
+            document.getElementById("tabs").addEventListener("click", (e) => {
+                if (!e.target.classList.contains("tab")) return;
+                document
+                    .querySelectorAll(".tab")
+                    .forEach((t) => t.classList.remove("active"));
+                e.target.classList.add("active");
+                catActiva = e.target.dataset.cat;
+                renderProductos(filtrar(catActiva));
+            });
+
+            // Cargar productos
+            fetch("/api/inventario/productos/")
+                .then((r) => r.json())
+                .then((data) => {
+                    // Filtrar: solo los que tienen precio > 0 y son pizza o adicional
+                    todos = data.filter(
+                        (p) =>
+                            p.precio > 0 &&
+                            (p.nombre.toLowerCase().includes("pizza") ||
+                                p.nombre.toLowerCase().includes("adicional")),
+                    );
+
+                    // Pizzas base para el combo (sin "mitad y mitad")
+                    pizzasBase = data.filter(
+                        (p) =>
+                            p.precio > 0 &&
+                            p.nombre.toLowerCase().includes("pizza") &&
+                            !p.nombre.toLowerCase().includes("mitad"),
+                    );
+
+                    // Producto mitad y mitad (cualquier tamaño, el que esté en el inventario)
+                    const mitadProds = data.filter(
+                        (p) =>
+                            p.nombre.toLowerCase().includes("mitad") &&
+                            p.precio > 0,
+                    );
+
+                    renderProductos(filtrar(catActiva));
+                    llenarCombo(mitadProds);
+                })
+                .catch(() => {
+                    toast("Error cargando productos", "err");
+                    document.getElementById("grid-productos").innerHTML =
+                        '<p style="color:var(--text-dim);font-size:.82rem;grid-column:1/-1">No se pudo cargar la carta.</p>';
+                });
+
+            // ══ COMBO MITAD Y MITAD ══
+            let mitadProductos = []; // productos "Pizza Mitad y Mitad - X" disponibles
+
+            function llenarCombo(mitadProds) {
+                mitadProductos = mitadProds;
+                if (!pizzasBase.length || !mitadProds.length) return;
+
+                const f1 = document.getElementById("combo-f1");
+                const f2 = document.getElementById("combo-f2");
+                const opts = pizzasBase
+                    .map(
+                        (p) =>
+                            `<option value="${p.id}|${p.nombre}">${p.nombre}</option>`,
+                    )
+                    .join("");
+                f1.innerHTML =
+                    '<option value="">Primera mitad...</option>' + opts;
+                f2.innerHTML =
+                    '<option value="">Segunda mitad...</option>' + opts;
+
+                document.getElementById("combo-section").style.display = "";
+            }
+
+            document
+                .getElementById("btn-agregar-combo")
+                .addEventListener("click", () => {
+                    const v1 = document.getElementById("combo-f1").value;
+                    const v2 = document.getElementById("combo-f2").value;
+                    if (!v1 || !v2) {
+                        toast("Elige los dos sabores", "err");
+                        return;
+                    }
+
+                    const [, nombre1] = v1.split("|");
+                    const [, nombre2] = v2.split("|");
+
+                    // Usar el primer producto mitad disponible (o el único)
+                    // Si hay varios tamaños, usar el primero — se puede expandir después
+                    const prod = mitadProductos[0];
+                    if (!prod) {
+                        toast(
+                            'No hay producto "Mitad y Mitad" en el inventario',
+                            "err",
+                        );
+                        return;
+                    }
+
+                    const nota = `½ ${nombre1}  +  ½ ${nombre2}`;
+                    carrito.push({
+                        producto_id: prod.id,
+                        nombre: prod.nombre,
+                        precio: prod.precio,
+                        cantidad: 1,
+                        nota,
+                    });
+                    renderCarrito();
+                    toast(`Mitad y Mitad agregada al pedido`, "inf", 1800);
+
+                    // Reset selectores
+                    document.getElementById("combo-f1").value = "";
+                    document.getElementById("combo-f2").value = "";
+                });
+
+            // ══ CARRITO ══
+            // Cada item: { producto_id, nombre, precio, cantidad, nota? }
+            let carrito = [];
+
+            function agregar(id, nombre, precio) {
+                const qtyEl = document.getElementById(`qty-${id}`);
+                const cant = parseInt(qtyEl?.value || 1);
+                if (isNaN(cant) || cant < 1) return;
+
+                // Agrupar si ya existe el mismo producto SIN nota
+                const idx = carrito.findIndex(
+                    (i) => i.producto_id === id && !i.nota,
+                );
+                if (idx > -1) carrito[idx].cantidad += cant;
+                else
+                    carrito.push({
+                        producto_id: id,
+                        nombre,
+                        precio,
+                        cantidad: cant,
+                    });
+
+                if (qtyEl) qtyEl.value = 1;
+                renderCarrito();
+                toast(`${nombre} x${cant}`, "inf", 1400);
+            }
+
+            function quitarItem(i) {
+                carrito.splice(i, 1);
+                renderCarrito();
+            }
+
+            function renderCarrito() {
+                const lista = document.getElementById("cart-items");
+                const empty = document.getElementById("cart-empty");
+                const badge = document.getElementById("cart-badge");
+                const total = document.getElementById("cart-total-amount");
+                const btnV = document.getElementById("btn-vender");
+
+                const nItems = carrito.reduce((s, i) => s + i.cantidad, 0);
+                const nTotal = carrito.reduce(
+                    (s, i) => s + i.precio * i.cantidad,
+                    0,
+                );
+
+                badge.textContent = nItems;
+                total.textContent = "$" + nTotal.toLocaleString("es-CO");
+                btnV.disabled = carrito.length === 0;
+
+                lista.querySelectorAll(".c-item").forEach((e) => e.remove());
+
+                if (!carrito.length) {
+                    empty.style.display = "flex";
+                    return;
+                }
+                empty.style.display = "none";
+
+                carrito.forEach((item, i) => {
+                    const el = document.createElement("div");
+                    el.className = "c-item";
+                    el.innerHTML = `
+            <div class="c-info">
+                <div class="c-name">${item.nombre}</div>
+                ${item.nota ? `<div class="c-nota">${item.nota}</div>` : ""}
+                <div class="c-qty">x${item.cantidad} · $${item.precio.toLocaleString("es-CO")} c/u</div>
+            </div>
+            <div class="c-price">$${(item.precio * item.cantidad).toLocaleString("es-CO")}</div>
+            <button class="c-del" onclick="quitarItem(${i})" title="Quitar">×</button>
+        `;
+                    lista.appendChild(el);
+                });
+            }
+
+            // ══ REGISTRAR VENTA ══
+            document
+                .getElementById("btn-vender")
+                .addEventListener("click", registrarVenta);
+
+            function registrarVenta() {
+                if (!carrito.length) return;
+                const btn = document.getElementById("btn-vender");
+                btn.disabled = true;
+                btn.textContent = "Registrando...";
+
+                const items = carrito.map((i) => ({
+                    producto_id: i.producto_id,
+                    cantidad: i.cantidad,
+                    ...(i.nota ? { nota: i.nota } : {}),
+                }));
+
+                fetch("/api/registrar/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf(),
+                    },
+                    body: JSON.stringify({ tienda_id: 1, items }),
+                })
+                    .then((r) => r.json())
+                    .then((d) => {
+                        if (d.error) toast("Error: " + d.error, "err");
+                        else {
+                            toast(
+                                `Venta #${d.venta_id} — $${d.total.toLocaleString("es-CO")}`,
+                                "ok",
+                            );
+                            carrito = [];
+                            renderCarrito();
+                            cargarVentas();
+                        }
+                    })
+                    .catch(() => toast("Error de conexión", "err"))
+                    .finally(() => {
+                        btn.textContent = "✅ Registrar venta";
+                        btn.disabled = carrito.length === 0;
+                    });
+            }
+
+            // ══ HISTORIAL ══
+            function cargarVentas() {
+                fetch("/api/listar/")
+                    .then((r) => r.json())
+                    .then((d) => {
+                        const c = document.getElementById("ventas-lista");
+                        if (!d.ventas?.length) {
+                            c.innerHTML =
+                                '<p style="color:var(--text-dim);font-size:.78rem;padding:.3rem 0">Sin ventas hoy.</p>';
+                            return;
+                        }
+                        let html = "";
+                        d.ventas.forEach((v) => {
+                            html += `
+                <div class="v-row">
+                    <span class="v-id">VENTA #${v.id}</span>
+                    <span class="v-total">$${parseInt(v.total).toLocaleString("es-CO")}</span>
+                    <button class="v-anular" data-id="${v.id}">Anular</button>
+                </div>`;
+                        });
+                        html += `
+            <div class="v-total-dia">
+                <span class="v-total-dia-label">Total del día</span>
+                <span class="v-total-dia-amount">$${parseInt(d.total_general).toLocaleString("es-CO")}</span>
+            </div>`;
+                        c.innerHTML = html;
+                        c.querySelectorAll(".v-anular").forEach((btn) => {
+                            btn.addEventListener("click", function () {
+                                anularVenta(parseInt(this.dataset.id));
+                            });
+                        });
+                    })
+                    .catch(() => toast("Error cargando ventas", "err"));
+            }
+
+            function anularVenta(id) {
+                if (
+                    !confirm(`¿Anular la venta #${id}? Se restaurará el stock.`)
+                )
+                    return;
+                fetch("/api/void/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf(),
+                    },
+                    body: JSON.stringify({ venta_id: id }),
+                })
+                    .then((r) => r.json())
+                    .then((d) => {
+                        if (d.error) toast("Error: " + d.error, "err");
+                        else {
+                            toast(d.mensaje || `Venta #${id} anulada`, "ok");
+                            cargarVentas();
+                        }
+                    })
+                    .catch(() => toast("Error de conexión", "err"));
+            }
+
+            // ══ CERRAR DÍA ══
+            document
+                .getElementById("btn-cerrar-dia")
+                .addEventListener("click", () => {
+                    if (
+                        !confirm(
+                            "¿Cerrar el día? El historial quedará cerrado.",
+                        )
+                    )
+                        return;
+                    fetch("/api/cerrar-dia/", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrf(),
+                        },
+                    })
+                        .then((r) => r.json())
+                        .then((d) => {
+                            if (d.error) toast(d.error, "err");
+                            else {
+                                toast(d.mensaje, "ok");
+                                cargarVentas();
+                            }
+                        })
+                        .catch(() => toast("Error de conexión", "err"));
+                });
+
+            // ══ INIT ══
+            cargarVentas();
+        </script>
+    </body>
+</html>
