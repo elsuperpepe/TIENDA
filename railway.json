@@ -1,7 +1,9 @@
 {
-  "build": { "builder": "NIXPACKS" },
+  "build": {
+    "builder": "NIXPACKS"
+  },
   "deploy": {
-    "startCommand": "python manage.py migrate && gunicorn core.wsgi --log-file -",
-    "healthcheckPath": "/api/listar/"
+    "startCommand": "gunicorn core.wsgi:application --log-file -",
+    "restartPolicyType": "ON_FAILURE"
   }
 }
