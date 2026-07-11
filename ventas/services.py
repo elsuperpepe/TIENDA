@@ -12,7 +12,9 @@ class VentaService:
     """Contiene la lógica de negocio pura para registrar ventas."""
 
     @staticmethod
-    def registrar(tienda_id: int, items_data: list) -> Venta:
+    def registrar(
+        tienda_id: int, items_data: list, mesa: str = "", pago: str = "efectivo"
+    ) -> Venta:
         """
         Registra una venta, descuenta stock y devuelve la Venta creada.
         items_data: lista de diccionarios con 'producto_id' (int o instancia) y 'cantidad' (int).
@@ -49,8 +51,7 @@ class VentaService:
                         )
 
             # 3. Crear la venta
-            venta = Venta.objects.create(tienda=tienda, total=0)
-
+            venta = Venta.objects.create(tienda=tienda, total=0, mesa=mesa, pago=pago)
             total_venta = 0
             for item in items_data:
                 producto_id = (

@@ -4,6 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AnularVenta,
     CerrarDia,
+    DetalleVenta,
+    EditarVenta,
     ExportarVentas,
     ListarVentas,
     RegistrarVenta,
@@ -27,4 +29,6 @@ urlpatterns = [
     path("exportar/", ExportarVentas.as_view(), name="exportar-ventas"),
     path("cerrar-dia/", CerrarDia.as_view(), name="cerrar-dia"),
     path("api-datos/", include(router.urls)),
+    path("detalle/<int:venta_id>/", DetalleVenta.as_view(), name="detalle-venta"),
+    path("editar/<int:venta_id>/", EditarVenta.as_view(), name="editar-venta"),
 ]

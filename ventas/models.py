@@ -11,6 +11,8 @@ class Venta(models.Model):
     cerrada = models.BooleanField(default=False)
     # nota a nivel de venta (opcional, para comentarios generales)
     nota = models.CharField(max_length=255, blank=True, default="")
+    mesa = models.CharField(max_length=50, blank=True, default="")
+    pago = models.CharField(max_length=20, default="efectivo")
 
     def __str__(self):
         return f"Venta #{self.id} — ${self.total} ({'anulada' if self.cancelada else 'activa'})"
