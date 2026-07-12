@@ -1675,12 +1675,12 @@
                     const card = document.createElement("div");
                     card.className = "p-card";
                     card.innerHTML = `
-            <div class="p-nom">${p.nombre}</div>
-            <div class="p-pr">$${p.precio.toLocaleString("es-CO")}</div>
-            <div class="p-ctrl">
-                <input type="number" class="p-qty" id="qty-${p.id}" value="1" min="1" max="99">
-                <button class="p-add" onclick="agregar(${p.id},'${nombre}',${p.precio})">+ Agregar</button>
-            </div>`;
+                        <div class="p-nom">${p.nombre}</div>
+                        <div class="p-pr">$${p.precio.toLocaleString("es-CO")}</div>
+                        <div class="p-ctrl">
+                            <input type="number" class="p-qty" id="qty-${p.id}" value="1" min="1" max="99">
+                            <button class="p-add" onclick="agregar(${p.id},'${nombre}',${p.precio})">+ Agregar</button>
+                        </div>`;
                     g.appendChild(card);
                 });
             }
@@ -1701,35 +1701,43 @@
                 renderProductos(filtrar(catActiva));
             });
 
-            fetch("/api/inventario/productos/")
-                .then((r) => r.json())
-                .then((data) => {
-                    todos = data.filter(
-                        (p) =>
-                            p.precio > 0 &&
-                            (p.nombre.toLowerCase().includes("pizza") ||
-                                p.nombre.toLowerCase().includes("adicional")),
-                    );
-                    pizzasBase = data.filter(
-                        (p) =>
-                            p.precio > 0 &&
-                            p.nombre.toLowerCase().includes("pizza") &&
-                            !p.nombre.toLowerCase().includes("mitad"),
-                    );
-                    mitadProds = data.filter(
-                        (p) =>
-                            p.nombre.toLowerCase().includes("mitad") &&
-                            p.precio > 0,
-                    );
-                    renderProductos(filtrar(catActiva));
-                    llenarCombo();
-                })
-                .catch(() => {
-                    toast("Error cargando productos", "err");
-                    document.getElementById("grid").innerHTML =
-                        '<p style="color:var(--dim);font-size:.78rem;grid-column:1/-1">No se pudo cargar la carta.</p>';
-                });
-
+            // Encapsulamos el fetch en una función limpia para poder reutilizarla
+            function inicializarInventario() {
+                fetch("/api/inventario/productos/")
+                    .then((r) => r.json())
+                    .then((data) => {
+                        todos = data.filter(
+                            (p) =>
+                                p.precio > 0 &&
+                                (p.nombre.toLowerCase().includes("pizza") ||
+                                    p.nombre
+                                        .toLowerCase()
+                                        .includes("adicional")),
+                        );
+                        pizzasBase = data.filter(
+                            (p) =>
+                                p.precio > 0 &&
+                                p.nombre.toLowerCase().includes("pizza") &&
+                                !p.nombre.toLowerCase().includes("mitad"),
+                        );
+                        mitadProds = data.filter(
+                            (p) =>
+                                p.nombre.toLowerCase().includes("mitad") &&
+                                p.precio > 0,
+                        );
+                        renderProductos(filtrar(catActiva));
+                        llenarCombo();
+                    })
+                    .catch((err) => {
+                        console.error("Error cargando inventario:", err);
+                        toast("Error cargando productos", "err");
+                        const g = document.getElementById("grid");
+                        if (g) {
+                            g.innerHTML =
+                                '<p style="color:var(--dim);font-size:.78rem;grid-column:1/-1">No se pudo cargar la carta.</p>';
+                        }
+                    });
+            }
             // ══ COMBO MITAD Y MITAD ══
             function llenarCombo() {
                 if (!pizzasBase.length || !mitadProds.length) return;
@@ -2453,6 +2461,7 @@
             }, 30000);
 
             // ══ INIT ══
+            inicializarInventario();
             cargarVentas();
         </script>
     </body>
