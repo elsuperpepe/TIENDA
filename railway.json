@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "gunicorn core.wsgi:application --log-file -",
+    "startCommand": "gunicorn TIENDA.wsgi:application --log-file -",
     "restartPolicyType": "ON_FAILURE"
   }
 }
