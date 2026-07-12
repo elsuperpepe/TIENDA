@@ -1,5 +1,6 @@
 # ventas/services.py
 import re
+import unicodedata
 
 from django.db import transaction
 
@@ -101,6 +102,7 @@ class VentaService:
 
 
 class VozParser:
+    # 1. Mapeo de números hablados a enteros
     PALABRAS_NUMEROS = {
         "un": 1,
         "una": 1,
@@ -115,69 +117,141 @@ class VozParser:
         "nueve": 9,
         "diez": 10,
     }
-    TAMANOS = {
-        "personal": "Personal",
-        "mediana": "Mediana",
-        "grande": "Grande",
-        "extragrande": "Extragrande",
+
+    # 2. Los tamaños reales de la carta El Trebol
+    TAMANOS = ["porcion", "personal", "small", "familiar"]
+
+    # 3. Diccionario: Lo que el cliente dice -> Como está en la BD
+    SABORES_MAP = {
+        "perro": "Perro",
+        "texana": "Texana",
+        "4 carnes": "4 Carnes",
+        "cuatro carnes": "4 Carnes",
+        "vegetariana": "Vegetariana",
+        "soledana": "Soledaña",
+        "caribena": "Caribeña",
+        "caprichosa": "Caprichosa",
+        "pollo jamon": "Pollo Jamón",
+        "pollo champinon": "Pollo Champiñón",
+        "peperoni americano": "Peperoni Americano",
+        "peperoni salami": "Peperoni Salami",
+        "pollo": "Pollo",
+        "jamon": "Jamón",
+        "bocadillo": "Bocadillo",
+        "tomate": "Tomate",
+        "salami": "Salami",
+        "pina": "Piña",
+        "jamon salami": "Jamón Salami",
     }
 
     @staticmethod
-    def parse(texto: str) -> list:
-        texto = texto.lower().strip()
-        # Buscar patrón mitades: <tamaño> mitad <flavor1> (y|,) mitad <flavor2>
-        # Ej: "mediana mitad perro y mitad hawaiana"
-        # Usamos regex simple
-        import re
-
-        mitad_match = re.search(
-            r"(personal|mediana|grande|extragrande)\s+mitad\s+(\w+)\s+y\s+mitad\s+(\w+)",
-            texto,
+    def limpiar_texto(texto):
+        """Quita tildes y pasa todo a minúsculas para no pelear con la ortografía"""
+        texto = (
+            unicodedata.normalize("NFKD", texto)
+            .encode("ASCII", "ignore")
+            .decode("utf-8")
         )
-        if mitad_match:
-            tamanio_nombre = mitad_match.group(1)
-            fl1 = mitad_match.group(2)
-            fl2 = mitad_match.group(3)
-            tamanio_key = VozParser.TAMANOS.get(tamanio_nombre)
-            if tamanio_key:
-                # Buscar producto "Pizza Mitad y Mitad - <Tamaño>"
+        return texto.lower().strip()
+
+    @staticmethod
+    def parse(texto: str) -> list:
+        texto_limpio = VozParser.limpiar_texto(texto)
+
+        # A. Extraer la cantidad (1 por defecto)
+        cantidad = VozParser._extraer_cantidad(texto_limpio)
+
+        # B. Extraer el tamaño
+        tamano_detectado = "Personal"  # Valor por defecto
+        for t in VozParser.TAMANOS:
+            if t in texto_limpio:
+                tamano_detectado = "Porción" if t == "porcion" else t.capitalize()
+                break
+
+        # C. Ordenamos los sabores de más largos a más cortos para evitar confusiones
+        # (ej: que no confunda "Pollo Jamón" con solo "Pollo")
+        sabores_hablados = sorted(VozParser.SABORES_MAP.keys(), key=len, reverse=True)
+
+        # ==========================================
+        # CASO 1: PIDIERON MITAD Y MITAD
+        # ==========================================
+        if "mitad" in texto_limpio:
+            sabores_encontrados = []
+            for sh in sabores_hablados:
+                # Si el sabor está en el texto, lo guardamos y lo borramos del texto
+                # para no agarrarlo dos veces por error
+                if sh in texto_limpio:
+                    sabores_encontrados.append(VozParser.SABORES_MAP[sh])
+                    texto_limpio = texto_limpio.replace(sh, "", 1)
+
+            if len(sabores_encontrados) >= 2:
+                fl1, fl2 = sabores_encontrados[0], sabores_encontrados[1]
+                if tamano_detectado == "Porción":
+                    raise ValueError("No se puede hacer mitad y mitad en porciones.")
+
+                nombre_bd = f"Pizza Mitad y Mitad - {tamano_detectado}"
                 try:
-                    prod_mitad = Producto.objects.get(nombre__icontains="mitad y mitad")
-                    # Adicionalmente nos aseguramos de que contenga el tamaño
-                    if tamanio_key.lower() not in prod_mitad.nombre.lower():
-                        raise ValueError(
-                            f"No se encontró Pizza Mitad y Mitad de tamaño {tamanio_key}"
-                        )
+                    prod = Producto.objects.get(nombre__iexact=nombre_bd)
                     return [
                         {
-                            "producto_id": prod_mitad.id,
-                            "cantidad": 1,
-                            "nota": f"mitad {fl1}, mitad {fl2}",
+                            "producto_id": prod.id,
+                            "cantidad": cantidad,
+                            "nota": f"½ {fl1} y ½ {fl2}",
                         }
                     ]
                 except Producto.DoesNotExist:
                     raise ValueError(
-                        f"No existe producto Mitad y Mitad para tamaño {tamanio_key}"
+                        f"No hay combos mitad y mitad tamaño {tamano_detectado}."
                     )
-        # Si no es mitades, buscar productos normales (como antes)
-        items = []
-        for producto in Producto.objects.all():
-            palabras_clave = producto.nombre.lower().split()
-            coincidencias = sum(1 for palabra in palabras_clave if palabra in texto)
-            if coincidencias >= 1:
-                cantidad = VozParser._extraer_cantidad(texto, producto.nombre.lower())
-                if cantidad > 0:
-                    items.append({"producto_id": producto.id, "cantidad": cantidad})
-        if not items:
-            raise ValueError("No se encontraron productos en el texto.")
-        return items
+            else:
+                raise ValueError(
+                    "Escuché 'mitad' pero no me quedaron claros los dos sabores."
+                )
+
+        # ==========================================
+        # CASO 2: PIDIERON UNA PIZZA ENTERA
+        # ==========================================
+        sabor_detectado = None
+        for sh in sabores_hablados:
+            if sh in texto_limpio:
+                sabor_detectado = VozParser.SABORES_MAP[sh]
+                break  # Agarramos el primero (el más largo) y paramos
+
+        if sabor_detectado:
+            nombre_bd = f"Pizza {sabor_detectado} - {tamano_detectado}"
+            try:
+                prod = Producto.objects.get(nombre__iexact=nombre_bd)
+                return [{"producto_id": prod.id, "cantidad": cantidad}]
+            except Producto.DoesNotExist:
+                raise ValueError(f"No encontré la {nombre_bd} en la base de datos.")
+
+        # ==========================================
+        # CASO 3: ADICIONALES (Bordes)
+        # ==========================================
+        if "borde" in texto_limpio:
+            if "queso" in texto_limpio:
+                nombre_bd = f"Adicional Borde de Queso - {tamano_detectado}"
+            elif "bocadillo" in texto_limpio:
+                nombre_bd = f"Adicional Borde de Bocadillo - {tamano_detectado}"
+
+            try:
+                prod = Producto.objects.get(nombre__iexact=nombre_bd)
+                return [{"producto_id": prod.id, "cantidad": cantidad}]
+            except:
+                raise ValueError(f"No encontré el borde {tamano_detectado}.")
+
+        # Si llega hasta aquí, habló carreta y no se entendió
+        raise ValueError("No entendí de qué sabor o tamaño la quieres, repite porfa.")
 
     @staticmethod
-    def _extraer_cantidad(texto, nombre_producto):
+    def _extraer_cantidad(texto):
+        # Busca números en dígitos ("2")
         digitos = re.search(r"\b(\d+)\b", texto)
         if digitos:
             return int(digitos.group(1))
-        for palabra in VozParser.PALABRAS_NUMEROS:
-            if palabra in texto:
-                return VozParser.PALABRAS_NUMEROS[palabra]
+
+        # Busca números en palabras ("dos") usando boundaries (\b) para no confundir
+        for palabra, num in VozParser.PALABRAS_NUMEROS.items():
+            if re.search(rf"\b{palabra}\b", texto):
+                return num
         return 1
